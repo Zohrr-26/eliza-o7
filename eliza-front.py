@@ -1,15 +1,15 @@
 
-import pandas as pd
 import os
 import json
-import xgboost as xgb
-import streamlit as st
 import requests
 
-def add_data(label: str, var): # add input_data or class
+import streamlit as st
+import pandas as pd
+
+def add_data(label, var): # add id_data or class
     for i, name in enumerate(labels[label]):
         if name == var:
-            input_data[label] = i + 1
+            id_data[label] = i + 1
             break
 
 #-----------------------------------------
@@ -45,7 +45,6 @@ province = {
 #-----------------------------------------
 #-----------------------------------------
 
-
 st.markdown("""
     <style>
     /* Cible le premier (et ici unique) bouton dans un stButton container */
@@ -71,10 +70,10 @@ st.markdown("""
 #---------------- Setup ------------------
 #-----------------------------------------
 
-st.title("Estimation de prix immobilier")
+st.title("Real estate price estimate")
 
-tab1, tab2, tab3 = st.tabs(["Basic", "Bool", "Advanced"])
-input_data = {}
+tab1, tab2 = st.tabs(["Basic", "Advanced"])
+id_data = {}
 
 #-----------------------------------------
 #----------------- Tab 1 -----------------
@@ -83,125 +82,131 @@ input_data = {}
 with tab1:
     left, right = st.columns(2)
 
-    is_house = left.selectbox("Type", ['Appartement', 'House'])
-
-    if is_house == "Appartment":
-        has_lift = st.checkbox('Lift')
-    else: has_lift = 0
-
-    surface = left.number_input("Surface habitable (m²)", min_value=0)
-    chambres = left.number_input("Chambres", min_value=0, step=1)
-    zip_code = right.number_input("Code Postal", min_value=1000)
-    
-    province_name = right.selectbox("Province", list(province.values()))
+    province_name = left.selectbox("Province", list(province.values()))
     for code, name in province.items():
         if name == province_name:
-            input_data['province'] = code
+            id_data['province'] = code
             break
-
+    
+    zip_code = left.number_input("Code Postal", min_value=1000)
+    
     locality = right.selectbox("Localité", labels['locality'])
     add_data('locality', locality)
 
-    st.write('---------')
+    surface = right.number_input("Surface habitable (m²)", min_value=0)
 
-    sl, sm, sr = st.columns(3)
-    facade = sl.number_input("Facades", min_value=0, step=1)
-    toilet = sl.number_input("Toilettes", min_value=0, step=1)
-    land_surface = sl.number_input("Surface de la propriété (m²)", min_value=0)
-    bathroom = sm.number_input("Bathrooms", min_value=0, step=1)
-    cadastre = sm.number_input("Cadastre Income", min_value=0, step=1)
-    energy = sm.number_input("Consommation d'énergie par m2", min_value=0, step=1)
+#-----------------------------------------
 
-    flood_zone_type = sr.selectbox("Flood Zone", labels['floodZoneType'])
-    heating_type = sm.selectbox("Heating Type", labels['heatingType'])
-    garden_orientation = sr.selectbox("Garden Orientatione", labels['gardenOrientation'])
-    epc_score = sl.selectbox("EPC Score", labels['epcScore'])
-    building_condition = sr.selectbox("Building Condition", labels['buildingCondition'])
+    is_house = st.selectbox("Type", ['Apartment', 'House'])
+
+    hl, hr = st.columns(2)
+
+    if is_house == "Apartment":
+        has_lift = st.checkbox('Lift')
+        garden = 0
+        pool = 0
+        st.write('-----')
+
+    else: 
+        has_lift = 0
+        pool = hr.checkbox('Swimming Pool')
+        garden = hl.checkbox('Garden')
+        id_data['hasGarden'] = garden
+
+        if id_data.get('hasGarden'):
+            id_data['gardenSurface'] = hl.number_input(
+                "Garden Surface (m²)", min_value=0, key="gardenSurface")
+        st.write('-----')
+
+    left, right = st.columns(2)
+
+    chambres = left.slider("Chambres", min_value=0, max_value=9, step=1)
+    facade = right.slider("Facades", min_value=0, max_value=4, step=1)
+    bathroom = left.slider("Bathrooms", min_value=0, max_value=5, step=1)
+    toilet = right.slider("Toilettes", min_value=0, max_value=5, step=1)
 
 #----------------------------------------------------------------
 
-    input_data['hasLift'] = has_lift
-    add_data('buildingCondition', building_condition)
-    add_data('floodZoneType', flood_zone_type)
-    add_data('heatingType', heating_type)
-    add_data('gardenOrientation', garden_orientation)
-    add_data('epcScore', epc_score)
-    input_data['type'] = 1 if is_house == "House" else 2
-    input_data['habitableSurface'] = surface
-    input_data['bedroomCount'] = chambres
-    input_data['facedeCount'] = facade
-    input_data['toiletCount'] = toilet
-    input_data['landSurface'] = land_surface
-    input_data['postCode'] = zip_code
-    input_data['bathroomCount'] = bathroom
-    input_data['cadastralIncome'] = cadastre
-    input_data['primaryEnergyConsumptionPerSqm'] = energy
+    id_data['hasLift'] = has_lift
+    id_data['type'] = 1 if is_house == "House" else 2
+    id_data['habitableSurface'] = surface
+    id_data['bedroomCount'] = chambres
+    id_data['facedeCount'] = facade
+    id_data['toiletCount'] = toilet
+    id_data['postCode'] = zip_code
+    id_data['bathroomCount'] = bathroom
+    id_data['hasSwimmingPool'] = pool
 
-    input_data['adresse'] = -1
+    id_data['adresse'] = -1
 
 #-----------------------------------------
 #----------------- Tab 2 -----------------
 #-----------------------------------------
 
 with tab2:
-    st.write("Sélection des équipements (cochez si présent):")
-
-    bool_cols = ['Attic', 'Basement', 'DressingRoom', 'DiningRoom',
-        'HeatPump', 'PhotovoltaicPanels', 'ThermicPanels', 'LivingRoom', 'Garden',
-        'parkingCountIndoor', 'parkingCountOutdoor', 'AirConditionning', 'ArmoredDoor', 'Visiophone',
-        'Office', 'SwimmingPool', 'Fireplace', 'Terrace',]
 
     cols = st.columns(2)
-    for key in bool_cols:
-        checked = cols[0 if bool_cols.index(key) % 2 == 0 else 1].checkbox(key)
-        input_data['has' + key] = checked
+    
+    bool_cols = [
+        'Attic', 'Basement', 'DressingRoom', 'DiningRoom',
+        'HeatPump', 'PhotovoltaicPanels', 'ThermicPanels',
+        'parkingCountIndoor', 'parkingCountOutdoor',
+        'AirConditionning', 'ArmoredDoor', 'Visiophone',
+        'Office', 'Fireplace', 'Terrace', 'LivingRoom',
+    ]
+    for idx, key in enumerate(bool_cols):
+        col = cols[idx % 2]
+        checked = col.checkbox(key)
+        id_data['has' + key] = checked
 
-#-----------------------------------------
-#----------------- Tab 3 -----------------
-#-----------------------------------------
+    st.write("---")
 
-with tab3:
-    st.write("Advanced Section")
-    cols = st.columns(2)
+    if id_data.get('hasparkingCountIndoor'):
+        id_data['parkingCountIndoor'] = st.number_input(
+            "Parking Indoor Count", min_value=0, key="parkingIndoorCount"
+        )
+    if id_data.get('hasparkingCountOutdoor'):
+        id_data['parkingCountOutdoor'] = st.number_input(
+            "Parking Outdoor Count", min_value=0, key="parkingOutdoorCount"
+        )
+    if id_data.get('hasTerrace'):
+        id_data['terraceSurface'] = st.number_input(
+            "Terrace Surface (m²)", min_value=0, key="terraceSurface"
+        )    
+    if id_data.get('hasLivingRoom'):
+        id_data['livingRoomSurface'] = st.number_input(
+            "Living room Surface (m²)", min_value=0, key="livingRoomSurface"
+        )    
+    if id_data.get('hasDiningRoom'):
+        id_data['diningRoomSurface'] = st.number_input(
+            "Dining room Surface (m²)", min_value=0, key="diningRoomSurface"
+        )
+
+    numeric_fields = [
+        ("Kitchen Surface", 'kitchenSurface'),
+        ("Building Year", 'buildingConstructionYear'),
+        ("Street Facade Width", 'streetFacadeWidth'),
+        ("Property Land Surface (m²)", 'landSurface'),
+        ("Cadastre Income", 'cadastralIncome'),
+        ("Energy Consumption per m²", 'primaryEnergyConsumptionPerSqm'),
+    ]
+    for label, key in numeric_fields:
+        id_data[key] = st.number_input(label, min_value=0, step=1)
 
     select_fields = {
         'Subtype': 'subtype',
         'Kitchen Type': 'kitchenType',
-        'Terrace Orientation': 'terraceOrientation'
+        'Terrace Orientation': 'terraceOrientation',
+        'Flood Zone': 'floodZoneType',
+        'Heating Type': 'heatingType',
+        'Garden Orientation': 'gardenOrientation',
+        'EPC Score': 'epcScore',
+        'Building Condition': 'buildingCondition'
     }
-    # for label_key, data_key in select_fields.items():
-    #     choice = st.selectbox(label_key, labels[data_key])
-    #     add_data(data_key, choice)
-    
-    numeric_fields = [
-        ("Parking Indoor", 'parkingCountIndoor'),
-        ("Parking Outdoor", 'parkingCountOutdoor'),
-        ("Terrace Surface", 'terraceSurface'),
-        ("Living Room Surface", 'livingRoomSurface'),
-        ("Kitchen Surface", 'kitchenSurface'),
-        ("Garden Surface", 'gardenSurface'),
-        ("Dining Room Surface", 'diningRoomSurface'),
-        ("Building Year", 'buildingConstructionYear'),
-        ("Street Facade Width", 'streetFacadeWidth'),
-    ]
-    # for prompt, key in numeric_fields:
-    #     val = st.number_input(prompt, min_value=0, step=1)
-    #     input_data[key] = val
+    for label, data_key in select_fields.items():
+        choice = st.selectbox(label, labels[data_key])
+        add_data(data_key, choice)
 
-    fields = (
-        [(label, key, 'select') for label, key in select_fields.items()] +
-        [(label, key, 'numeric') for label, key in numeric_fields]
-    )
-
-    for idx, (label_text, data_key, kind) in enumerate(fields):
-        col = cols[idx % 2]
-        if kind == 'select':
-            choice = col.selectbox(label_text, labels[data_key])
-            add_data(data_key, choice) # need to add 1 somewhere
-        else:
-            val = col.number_input(label_text, min_value=0, step=1)
-            input_data[data_key] = val
-            
 #-----------------------------------------
 #---------------- SideBar-----------------
 #-----------------------------------------
@@ -213,8 +218,8 @@ with st.sidebar:
     #--------------- FastAPI -----------------
     #-----------------------------------------
 
-        url = "http://localhost:8555/predict"
-        req = requests.post(url, json=input_data, timeout=5)
+        prediction_url = "https://eliza-o7.onrender.com/predict"
+        req = requests.post(prediction_url, json=id_data, timeout=5)
 
         if req.status_code == 200:
             price = req.json()["price"]
@@ -222,3 +227,14 @@ with st.sidebar:
 
         else:
             st.error(f"Erreur API {req.status_code}: {req.text}")
+
+    st.title('History:')
+
+    history_url = "https://eliza-o7.onrender.com/history"
+    history = requests.get(history_url, timeout=5)
+
+    for row in history['rows']:
+        st.write(row)
+    
+    st.write("555 : locality : price")
+    st.write("666 : bruxelles : 150.000")
