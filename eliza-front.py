@@ -209,14 +209,12 @@ with tab2:
 
 #-----------------------------------------
 #---------------- SideBar-----------------
+#--------------- FastAPI -----------------
 #-----------------------------------------
 
 with st.sidebar:
-    if st.button("Prediction"):
 
-    #-----------------------------------------
-    #--------------- FastAPI -----------------
-    #-----------------------------------------
+    if st.button("Prediction"):
 
         prediction_url = "https://eliza-o7.onrender.com/predict"
         req = requests.post(prediction_url, json=id_data, timeout=5)
@@ -228,13 +226,19 @@ with st.sidebar:
         else:
             st.error(f"Erreur API {req.status_code}: {req.text}")
 
+    #-----------------------------------------
+    #--------------- History -----------------
+    #-----------------------------------------
+
     st.title('History:')
 
     history_url = "https://eliza-o7.onrender.com/history"
-    history = requests.get(history_url, timeout=5)
+    resp = requests.get(history_url, timeout=5)
 
-    for row in history['rows']:
-        st.write(row)
+    if resp.status_code == 200:
+        data = resp.json()
+        for row in data.get('rows', []):
+            st.write(row[-1])
+    else:
+        st.error(f"Erreur historique {resp.status_code}: {resp.text}")
     
-    st.write("555 : locality : price")
-    st.write("666 : bruxelles : 150.000")

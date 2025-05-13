@@ -47,7 +47,7 @@ def predict(input_data: dict = Body(...)): # convert json into dict
 
 ## add columns price, add id_pred to rows
     df_input['price'] = id_pred
-    df_input.to_csv(csv_path, mode='a')
+    df_input.to_csv(csv_path, mode='a', headers=False)
 
     return {"price": float(id_pred)} # return a json / dict
 
