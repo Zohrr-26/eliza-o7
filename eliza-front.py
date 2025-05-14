@@ -245,9 +245,8 @@ with tab2:
 with st.sidebar:
 
     if st.button("Prediction"):
-
-        #prediction_url = "https://eliza-o7.onrender.com/predict"
-        prediction_url = "http://0.0.0.0:8555/predict"
+        prediction_url = "https://eliza-back.onrender.com/predict"
+        #prediction_url = "http://0.0.0.0:8555/predict"
         req = requests.post(prediction_url, json=id_data, timeout=5)
 
         if req.status_code == 200:
@@ -264,8 +263,8 @@ with st.sidebar:
     st.write('---')
     st.title('History:')
 
-    #history_url = "https://eliza-o7.onrender.com/history"
-    history_url = "http://0.0.0.0:8555/history"
+    history_url = "https://eliza-back.onrender.com/history"
+    #history_url = "http://0.0.0.0:8555/history"
     resp = requests.get(history_url, timeout=5)
 
     if resp.status_code == 200:
