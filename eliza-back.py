@@ -9,7 +9,9 @@ from eliza_new_id import New_ID
 
 app = FastAPI()
 
-#------------------------------------------------
+#-----------------------------------------
+#------------- Load Model ----------------
+#-----------------------------------------
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(current_dir, "model.ubj")
@@ -18,17 +20,7 @@ booster = xgb.Booster()
 booster.load_model(model_path)
 print("model loaded as booster")
 
-#-----------------------------------------
-#------------ History CSV ----------------
-#-----------------------------------------
-
 csv_path = os.path.join(current_dir, "history.csv")
-
-if not os.path.exists(csv_path):
-    empty_df = pd.DataFrame(columns=New_ID.fields)
-    empty_df.to_csv(csv_path, index=False, encoding="utf-8")
-
-history = pd.read_csv(csv_path, encoding="utf-8")
 
 #-----------------------------------------
 #------------ Predict Price --------------
@@ -45,21 +37,28 @@ def predict(input_data: dict = Body(...)): # convert json into dict
     dmat = xgb.DMatrix(df_input)
     id_pred = booster.predict(dmat)[0]
 
-## add columns price, add id_pred to rows
+#-----------------------------------------
+#-------- Add Price To History -----------
+
+    if not os.path.exists(csv_path):
+        empty_df = pd.DataFrame(columns=New_ID.fields)
+        empty_df.to_csv(csv_path, index=True, encoding="utf-8")
+
     df_input['price'] = id_pred
-    df_input.to_csv(csv_path, mode='a', headers=False)
+    df_input.to_csv(csv_path, mode='a', header=False, index=True)
 
     return {"price": float(id_pred)} # return a json / dict
-
+    
 #-----------------------------------------
-#---------- Store Prediction -------------
+#--------------- History -----------------
 #-----------------------------------------
 
 @app.get('/history')
 def history():
+
     history = pd.read_csv(csv_path, encoding="utf-8")
-    head_13 = history.head(13).values.tolist()
-    return {"rows": head_13}
+    tail_13 = history.tail(13).values.tolist()
+    return {"rows": tail_13}
 
 #-----------------------------------------
 #----- Start Asgi Server Uvicorn ---------

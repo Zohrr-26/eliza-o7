@@ -2,3 +2,4 @@ pandas
 xgboost
 fastapi
 uvicorn
+streamlit
