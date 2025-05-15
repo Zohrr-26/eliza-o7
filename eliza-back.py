@@ -56,6 +56,10 @@ def predict(input_data: dict = Body(...)): # convert json into dict
 @app.get('/history')
 def history():
 
+    if not os.path.exists(csv_path):
+        empty_df = pd.DataFrame(columns=New_ID.fields)
+        empty_df.to_csv(csv_path, index=True, encoding="utf-8")
+
     history = pd.read_csv(csv_path, encoding="utf-8")
     tail_13 = history.tail(13).values.tolist()
     return {"rows": tail_13}
