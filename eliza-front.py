@@ -256,14 +256,15 @@ with st.sidebar:
                 st.write(f"price of the property: {price:,.0f} €")
 
         except requests.exceptions.ReadTimeout:
-            st.error("Le serveur met trop de temps à répondre (timeout). " \
+            st.error("Le serveur met trop de temps à répondre (timeout). "
                     "Réessayez dans quelques instants.")
             
         except requests.exceptions.HTTPError as ex:
             st.error(f"Erreur HTTP {req.status_code} : {req.text}")
 
         except requests.exceptions.RequestException as ex:
-            st.error(f"Impossible de joindre l'API : {ex}")
+            st.error("Le service de prédiction n'est pas encore disponible. "
+            "Veuillez patienter quelques instants pendant que le backend se charge.")
 
     #-----------------------------------------
     #--------------- History -----------------
@@ -290,14 +291,15 @@ with st.sidebar:
                 st.write(f"{locality_name} -- {price:,.0f} €")
 
     except requests.exceptions.ReadTimeout:
-        st.error("Le serveur met trop de temps à répondre (timeout). " \
+        st.error("Le serveur met trop de temps à répondre (timeout). "
                  "Réessayez dans quelques instants.")
         
     except requests.exceptions.HTTPError as e:
         st.error(f"Erreur HTTP {resp.status_code} : {resp.text}")
 
     except requests.exceptions.RequestException as e:
-        st.error(f"Impossible de joindre l'API : {e}")
+        st.error("Le service de prédiction n'est pas encore disponible. "
+        "Veuillez patienter quelques instants pendant que le backend se charge.")
         
     
     #-----------------------------------------
