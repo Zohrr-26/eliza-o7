@@ -256,15 +256,15 @@ with st.sidebar:
                 st.write(f"price of the property: {price:,.0f} €")
 
         except requests.exceptions.ReadTimeout:
-            st.error("Le serveur met trop de temps à répondre (timeout). "
-                    "Réessayez dans quelques instants.")
+            st.error("The server is taking too long to respond (timeout). "
+                    "Try again in a few moments.")
             
         except requests.exceptions.HTTPError as ex:
-            st.error(f"Erreur HTTP {req.status_code} : {req.text}")
+            st.error(f"HTTP Error {req.status_code} : {req.text}")
 
         except requests.exceptions.RequestException as ex:
-            st.error("Le service de prédiction n'est pas encore disponible. "
-            "Veuillez patienter quelques instants pendant que le backend se charge.")
+            st.error("The prediction service is not yet available."
+                    "Please wait a few moments while the backend loads.")
 
     #-----------------------------------------
     #--------------- History -----------------
@@ -291,15 +291,15 @@ with st.sidebar:
                 st.write(f"{locality_name} -- {price:,.0f} €")
 
     except requests.exceptions.ReadTimeout:
-        st.error("Le serveur met trop de temps à répondre (timeout). "
-                 "Réessayez dans quelques instants.")
+        st.error("The server is taking too long to respond (timeout). "
+                "Try again in a few moments.")
         
     except requests.exceptions.HTTPError as e:
-        st.error(f"Erreur HTTP {resp.status_code} : {resp.text}")
+        st.error(f"HTTP Error {resp.status_code} : {resp.text}")
 
     except requests.exceptions.RequestException as e:
-        st.error("Le service de prédiction n'est pas encore disponible. "
-        "Veuillez patienter quelques instants pendant que le backend se charge.")
+        st.error("The prediction service is not yet available."
+                "Please wait a few moments while the backend loads.")
         
     
     #-----------------------------------------
