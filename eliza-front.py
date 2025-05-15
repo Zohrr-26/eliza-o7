@@ -245,16 +245,25 @@ with tab2:
 with st.sidebar:
 
     if st.button("Prediction"):
-        prediction_url = "https://eliza-back.onrender.com/predict"
-        #prediction_url = "http://0.0.0.0:8555/predict"
-        req = requests.post(prediction_url, json=id_data, timeout=5)
+        #prediction_url = "https://eliza-back.onrender.com/predict"
+        prediction_url = "http://0.0.0.0:8555/predict"
 
-        if req.status_code == 200:
-            price = req.json()["price"]
-            st.write(f"price of the property: {price:,.0f} €")
+        try:
+            req = requests.post(prediction_url, json=id_data, timeout=9)
 
-        else:
-            st.error(f"Erreur API {req.status_code}: {req.text}")
+            if req.status_code == 200:
+                price = req.json()["price"]
+                st.write(f"price of the property: {price:,.0f} €")
+
+        except requests.exceptions.ReadTimeout:
+            st.error("Le serveur met trop de temps à répondre (timeout). " \
+                    "Réessayez dans quelques instants.")
+            
+        except requests.exceptions.HTTPError as ex:
+            st.error(f"Erreur HTTP {req.status_code} : {req.text}")
+
+        except requests.exceptions.RequestException as ex:
+            st.error(f"Impossible de joindre l'API : {ex}")
 
     #-----------------------------------------
     #--------------- History -----------------
@@ -263,31 +272,40 @@ with st.sidebar:
     st.write('---')
     st.title('History:')
 
-    history_url = "https://eliza-back.onrender.com/history"
-    #history_url = "http://0.0.0.0:8555/history"
-    resp = requests.get(history_url, timeout=5)
+    #history_url = "https://eliza-back.onrender.com/history"
+    history_url = "http://0.0.0.0:8555/history"
 
-    if resp.status_code == 200:
-        data = resp.json()
+    try: 
+        resp = requests.get(history_url, timeout=9)
 
-        for row in reversed(data.get('rows', [])):
+        if resp.status_code == 200:
+            data = resp.json()
 
-            locality_data = row[5] -1 
-            locality_name = labels['locality'][locality_data]
-            price = row[-1]
+            for row in reversed(data.get('rows', [])):
 
-            st.write(f"{locality_name} -- {price:,.0f} €")
+                locality_data = row[5] -1 
+                locality_name = labels['locality'][locality_data]
+                price = row[-1]
 
-    else:
-        st.error(f"Erreur historique {resp.status_code}: {resp.text}")
+                st.write(f"{locality_name} -- {price:,.0f} €")
+
+    except requests.exceptions.ReadTimeout:
+        st.error("Le serveur met trop de temps à répondre (timeout). " \
+                 "Réessayez dans quelques instants.")
+        
+    except requests.exceptions.HTTPError as e:
+        st.error(f"Erreur HTTP {resp.status_code} : {resp.text}")
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"Impossible de joindre l'API : {e}")
+        
     
     #-----------------------------------------
     #------------- to do list-----------------
     #-----------------------------------------
 
-    #### deploy render
-
     #### address => reverse geocode
 
     #### if locality => postcode
     #### if postcode => locality
+
